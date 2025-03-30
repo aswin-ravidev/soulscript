@@ -1,0 +1,82 @@
+import { NextRequest, NextResponse } from 'next/server';
+import connectDB from '@/lib/mongodb';
+import { User } from '@/lib/models/User';
+import { withAuth } from '@/lib/auth';
+
+// PATCH - Update the user's profile
+export async function PATCH(request: NextRequest) {
+  try {
+    // Authenticate user
+    const user = await withAuth(request);
+    if (!user || user.status === 401) {
+      return user; // Returns the error response from withAuth
+    }
+    
+    // Connect to database
+    await connectDB();
+    
+    // Get profile data from request
+    const data = await request.json();
+    
+    // Fields that can be updated
+    const allowedFields = ['name', 'bio', 'specialization', 'contactEmail', 'phoneNumber'];
+    
+    // Create update object with only allowed fields
+    const updates: any = {};
+    
+    allowedFields.forEach(field => {
+      if (data[field] !== undefined) {
+        updates[field] = data[field];
+      }
+    });
+    
+    // Validate fields for therapist
+    if (user.role === 'therapist' && updates.specialization === '') {
+      return NextResponse.json(
+        { success: false, message: 'Specialization is required for therapists' },
+        { status: 400 }
+      );
+    }
+    
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      user.id,
+      updates,
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!updatedUser) {
+      return NextResponse.json(
+        { success: false, message: 'User not found' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        bio: updatedUser.bio,
+        specialization: updatedUser.specialization,
+        contactEmail: updatedUser.contactEmail,
+        phoneNumber: updatedUser.phoneNumber,
+        profileImage: updatedUser.profileImage,
+        createdAt: updatedUser.createdAt
+      }
+    });
+  } catch (error: any) {
+    console.error('Error updating profile:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Failed to update profile',
+        error: error.message || 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+} 
