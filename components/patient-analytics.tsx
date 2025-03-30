@@ -38,7 +38,9 @@ export default function PatientAnalytics({ patientId }: PatientAnalyticsProps) {
       setError(null)
       
       try {
-        const response = await fetch(`/api/patients/analytics?patientId=${patientId}`)
+        // Add a cache-busting query parameter to ensure fresh data
+        const timestamp = new Date().getTime()
+        const response = await fetch(`/api/patients/analytics?patientId=${patientId}&_=${timestamp}`)
         
         if (!response.ok) {
           throw new Error('Failed to fetch patient analytics')
@@ -60,6 +62,52 @@ export default function PatientAnalytics({ patientId }: PatientAnalyticsProps) {
     }
     
     fetchAnalytics()
+    
+    // Set up a refresh interval to keep analytics up to date
+    const refreshInterval = setInterval(() => {
+      fetchAnalytics()
+    }, 30000) // Refresh every 30 seconds for more up-to-date information
+    
+    return () => {
+      clearInterval(refreshInterval)
+    }
+  }, [patientId])
+  
+  // Add visibility change handler for tab switching
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // This is a way to trigger a re-fetch of analytics when the tab becomes visible again
+        const fetchAnalyticsOnFocus = async () => {
+          if (!patientId) return
+          
+          try {
+            const timestamp = new Date().getTime()
+            const response = await fetch(`/api/patients/analytics?patientId=${patientId}&_=${timestamp}`)
+            
+            if (!response.ok) {
+              throw new Error('Failed to fetch patient analytics')
+            }
+            
+            const data = await response.json()
+            
+            if (data.success && data.analytics) {
+              setAnalytics(data.analytics)
+            }
+          } catch (err) {
+            console.error('Error refreshing analytics:', err)
+          }
+        }
+        
+        fetchAnalyticsOnFocus()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [patientId])
 
   // Helper to format month name from index

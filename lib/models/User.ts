@@ -1,6 +1,22 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
+const emergencyContactSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    trim: true,
+  },
+  phone: {
+    type: String,
+    trim: true,
+  },
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true,
+  }
+}, { _id: false });
+
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -21,7 +37,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'therapist'],
+    enum: ['user', 'therapist', 'patient'],
     default: 'user',
   },
   specialization: {
@@ -46,6 +62,21 @@ const userSchema = new mongoose.Schema({
   profileImage: {
     type: String,
     default: '/placeholder-user.jpg'
+  },
+  emergencyContacts: {
+    type: [emergencyContactSchema],
+    default: [],
+    validate: {
+      validator: function(this: any, contacts: any[]) {
+        // Emergency contacts are only required for patients
+        if (this.role !== 'patient') return true;
+        // If patient, at least one contact should have name and either phone or email
+        return contacts.some(contact => 
+          contact.name && (contact.phone || contact.email)
+        );
+      },
+      message: 'Patients should have at least one valid emergency contact'
+    }
   },
   createdAt: {
     type: Date,
@@ -92,16 +123,23 @@ userSchema.methods.comparePassword = async function(enteredPassword: string): Pr
 // Export the model
 export const User = mongoose.models.User || mongoose.model('User', userSchema);
 
+export type EmergencyContactType = {
+  name: string;
+  phone?: string;
+  email?: string;
+};
+
 export type UserType = {
   _id?: string;
   name: string;
   email: string;
   password?: string;
-  role: 'user' | 'therapist';
+  role: 'user' | 'therapist' | 'patient';
   specialization?: string;
   bio?: string;
   contactEmail?: string;
   phoneNumber?: string;
   profileImage?: string;
+  emergencyContacts?: EmergencyContactType[];
   createdAt?: Date;
 }; 

@@ -19,7 +19,7 @@ export async function PATCH(request: NextRequest) {
     const data = await request.json();
     
     // Fields that can be updated
-    const allowedFields = ['name', 'bio', 'specialization', 'contactEmail', 'phoneNumber'];
+    const allowedFields = ['name', 'bio', 'specialization', 'contactEmail', 'phoneNumber', 'emergencyContacts'];
     
     // Create update object with only allowed fields
     const updates: any = {};
@@ -36,6 +36,29 @@ export async function PATCH(request: NextRequest) {
         { success: false, message: 'Specialization is required for therapists' },
         { status: 400 }
       );
+    }
+    
+    // Validate emergency contacts for patient
+    if (user.role === 'patient' && updates.emergencyContacts) {
+      // Ensure emergencyContacts is an array
+      if (!Array.isArray(updates.emergencyContacts)) {
+        return NextResponse.json(
+          { success: false, message: 'Emergency contacts must be an array' },
+          { status: 400 }
+        );
+      }
+      
+      // Validate each emergency contact has required fields
+      const hasValidContact = updates.emergencyContacts.some((contact: any) => 
+        contact && contact.name && (contact.phone || contact.email)
+      );
+      
+      if (!hasValidContact && updates.emergencyContacts.length > 0) {
+        return NextResponse.json(
+          { success: false, message: 'At least one emergency contact must have a name and either a phone number or email' },
+          { status: 400 }
+        );
+      }
     }
     
     // Update user
@@ -65,6 +88,7 @@ export async function PATCH(request: NextRequest) {
         contactEmail: updatedUser.contactEmail,
         phoneNumber: updatedUser.phoneNumber,
         profileImage: updatedUser.profileImage,
+        emergencyContacts: updatedUser.emergencyContacts,
         createdAt: updatedUser.createdAt
       }
     });

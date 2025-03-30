@@ -311,9 +311,9 @@ export default function DashboardPage() {
                     >
                       <BarChart3 className="h-5 w-5" />
                       <span>Patient Analytics</span>
-                      {activePatients > 0 && (
+                      {/* {activePatients > 0 && (
                         <span className="text-xs text-muted-foreground">Real data available</span>
-                      )}
+                      )} */}
                     </Button>
                   </div>
                 </CardContent>

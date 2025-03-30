@@ -4,6 +4,7 @@ import { JournalEntry } from '@/lib/models/JournalEntry';
 import { withAuth } from '@/lib/auth';
 import mongoose from 'mongoose';
 import { predictMentalHealthClass } from '@/lib/ml-utils';
+import { sendSuicidalAlert, checkRecentEntriesAndAlert } from '@/lib/services/alert-service';
 
 // Helper function to get random sentiment for now (fallback only)
 function getRandomSentiment() {
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
     
     // Use sentiment analysis to determine mental health class
     let mentalHealthClass;
+    let confidence = 0;
     try {
       // Get sentiment prediction from model
       console.log('Getting sentiment prediction for journal entry...');
@@ -69,6 +71,7 @@ export async function POST(request: NextRequest) {
       
       if (prediction.success && prediction.mentalHealthClass) {
         mentalHealthClass = prediction.mentalHealthClass;
+        confidence = prediction.confidence || 0;
         console.log('Using sentiment prediction:', mentalHealthClass, 'confidence:', prediction.confidence);
       } else {
         // Fallback to random if prediction failed
@@ -89,7 +92,22 @@ export async function POST(request: NextRequest) {
       mood,
       date: date || new Date(),
       mentalHealthClass,
+      confidence,
       userId: new mongoose.Types.ObjectId(user._id),
+    });
+    
+    // Handle emergency alerts for suicidal content
+    if (mentalHealthClass === 'Suicidal') {
+      console.log('Suicidal content detected, sending emergency alerts');
+      // Send async - don't wait for alerts to complete
+      sendSuicidalAlert(user._id, entry).catch(err => {
+        console.error('Error sending suicidal alert:', err);
+      });
+    }
+    
+    // Check recent entry patterns
+    checkRecentEntriesAndAlert(user._id).catch(err => {
+      console.error('Error checking recent entry patterns:', err);
     });
     
     return NextResponse.json(

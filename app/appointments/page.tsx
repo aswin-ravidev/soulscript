@@ -282,8 +282,14 @@ export default function AppointmentsPage() {
           description: "Your appointment has been scheduled successfully."
         })
         
-        // Add the new appointment to the upcoming appointments list
-        setUpcomingAppointments(prev => [...prev, data.appointment])
+        // Refresh all appointment data
+        fetchAppointments()
+        
+        // Dispatch a custom event to notify other components that an appointment was added
+        const event = new CustomEvent('appointmentChanged', { 
+          detail: { type: 'added', appointment: data.appointment } 
+        })
+        window.dispatchEvent(event)
       } else {
         throw new Error(data.message || 'Failed to schedule appointment')
       }
@@ -329,18 +335,33 @@ export default function AppointmentsPage() {
           description: "The appointment has been cancelled successfully."
         })
         
-        // Find the appointment to update
-        const appointmentToCancel = upcomingAppointments.find(appt => appt._id === appointmentId);
+        // Immediately update the UI by removing from upcoming and adding to cancelled
+        const cancelledAppointment = upcomingAppointments.find(a => a._id === appointmentId);
+        if (cancelledAppointment) {
+          // Update status in our local state
+          cancelledAppointment.status = 'cancelled';
+          
+          // Remove from upcoming list
+          setUpcomingAppointments(prev => prev.filter(a => a._id !== appointmentId));
+          
+          // Add to the beginning of past appointments if it's already past current time
+          const appointmentDate = new Date(cancelledAppointment.date);
+          const now = new Date();
+          if (appointmentDate <= now) {
+            setPastAppointments(prev => [cancelledAppointment, ...prev]);
+          }
+        }
         
-        if (appointmentToCancel) {
-          // Update the appointment status
-          const updatedAppointment = { ...appointmentToCancel, status: 'cancelled' };
-          
-          // Remove from upcoming and add to the appropriate list based on date
-          setUpcomingAppointments(prev => prev.filter(appt => appt._id !== appointmentId));
-          
-          // Re-fetch appointments to update all lists
-          fetchAppointments();
+        // Still refresh data from server to ensure everything is in sync
+        fetchAppointments()
+        
+        // Dispatch a custom event to notify other components that an appointment was cancelled
+        const appointment = upcomingAppointments.find(appt => appt._id === appointmentId)
+        if (appointment) {
+          const event = new CustomEvent('appointmentChanged', { 
+            detail: { type: 'cancelled', appointment } 
+          })
+          window.dispatchEvent(event)
         }
       } else {
         throw new Error(data.message || 'Failed to cancel appointment')
@@ -357,15 +378,35 @@ export default function AppointmentsPage() {
 
   // Helper function to check if an appointment is in the future
   const isUpcomingAppointment = (appointment: Appointment) => {
+    // Skip cancelled appointments
+    if (appointment.status === 'cancelled') {
+      return false;
+    }
+    
     const appointmentDate = new Date(appointment.date);
     const now = new Date();
+    
+    // Parse the time string (e.g., "1:00 PM") to set the hours and minutes
+    const timeMatch = appointment.time.match(/(\d+):(\d+)\s+([AP]M)/);
+    if (timeMatch) {
+      const [_, hours, minutes, ampm] = timeMatch;
+      let hour = parseInt(hours);
+      
+      // Convert from 12-hour to 24-hour format
+      if (ampm === 'PM' && hour < 12) hour += 12;
+      if (ampm === 'AM' && hour === 12) hour = 0;
+      
+      // Set the appointment date's time components
+      appointmentDate.setHours(hour, parseInt(minutes), 0, 0);
+    }
     
     // For debugging purposes
     if (appointmentDate.toDateString().includes("Mar 29 2025")) {
       console.log("Checking Mar 29 2025 appointment:", {
         date: appointmentDate.toISOString(),
         now: now.toISOString(),
-        isUpcoming: appointmentDate > now
+        isUpcoming: appointmentDate > now,
+        status: appointment.status
       });
     }
     
@@ -515,11 +556,13 @@ export default function AppointmentsPage() {
         </div>
 
         <Tabs defaultValue="upcoming" className="space-y-4">
+          <div className="flex justify-between mb-2">
           <TabsList>
             <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
             <TabsTrigger value="past">Past</TabsTrigger>
-            <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+              <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
           </TabsList>
+          </div>
 
           <TabsContent value="upcoming" className="space-y-4">
             {isLoading ? (

@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
         // Log for debugging
         console.log(`Appointment ${appointment._id} date+time: ${appointmentDate.toISOString()}`);
         console.log(`Is after current time? ${appointmentDate > now}`);
+        console.log(`Status: ${appointment.status}`);
         
         if (status === 'upcoming') {
           // For upcoming, we want appointments that are in the future and not cancelled

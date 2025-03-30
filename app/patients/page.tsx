@@ -130,69 +130,147 @@ export default function PatientsPage() {
   }, [connectionRequests, loading])
 
   // Fetch appointment data for all patients
+  const fetchAppointments = async () => {
+    try {
+      console.log("Fetching appointments for patients page...")
+      
+      // Fetch all appointments
+      const response = await fetch('/api/appointments')
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch appointments')
+      }
+      
+      const data = await response.json()
+      
+      if (data.success && data.appointments && Array.isArray(data.appointments)) {
+        console.log(`Processing ${data.appointments.length} appointments`)
+        
+        // Process appointments into a map of patient ID -> appointment data
+        const appointmentsByPatient: {[key: string]: {nextSession?: string, lastSession?: string}} = {}
+        
+        data.appointments.forEach((appointment: any) => {
+          const appointmentDate = new Date(appointment.date)
+          const patientId = appointment.patient?._id || appointment.patient?.id
+          
+          if (!patientId) return
+          
+          if (!appointmentsByPatient[patientId]) {
+            appointmentsByPatient[patientId] = {}
+          }
+          
+          // Format the appointment date and time for display
+          const formattedDate = format(appointmentDate, "MMM d, yyyy")
+          const formattedDateTime = `${formattedDate} at ${appointment.time}`
+          
+          // Get current date
+          const now = new Date()
+          
+          // Compare using full date and time instead of just the date
+          const appointmentTime = appointment.time.match(/(\d+):(\d+)\s+([AP]M)/)
+          if (appointmentTime) {
+            const [_, hours, minutes, ampm] = appointmentTime
+            let hour = parseInt(hours)
+            
+            // Convert 12-hour to 24-hour format
+            if (ampm === 'PM' && hour < 12) hour += 12
+            if (ampm === 'AM' && hour === 12) hour = 0
+            
+            // Set the appointment date's time components
+            appointmentDate.setHours(hour, parseInt(minutes), 0, 0)
+          }
+          
+          // Debug log
+          console.log(`Appointment for ${appointment.patient?.name || patientId}:`, {
+            date: appointmentDate.toISOString(),
+            time: appointment.time,
+            now: now.toISOString(),
+            isUpcoming: appointmentDate > now,
+            status: appointment.status
+          })
+          
+          // Skip cancelled appointments when determining next/last session
+          if (appointment.status === 'cancelled') {
+            console.log(`Skipping cancelled appointment for ${patientId}`)
+            return
+          }
+          
+          if (appointmentDate > now) {
+            // This is an upcoming appointment
+            // If we don't have a next session yet, or this one is sooner, use it
+            if (!appointmentsByPatient[patientId].nextSession || 
+                new Date(appointment.date) < new Date(appointmentsByPatient[patientId].nextSession?.split(' at ')[0])) {
+              appointmentsByPatient[patientId].nextSession = formattedDateTime
+              console.log(`Set next session for ${patientId} to ${formattedDateTime}`)
+            }
+          } else {
+            // This is a past appointment
+            // If we don't have a last session yet, or this one is more recent, use it
+            if (!appointmentsByPatient[patientId].lastSession || 
+                new Date(appointment.date) > new Date(appointmentsByPatient[patientId].lastSession?.split(' at ')[0])) {
+              appointmentsByPatient[patientId].lastSession = formattedDateTime
+              console.log(`Set last session for ${patientId} to ${formattedDateTime}`)
+            }
+          }
+        })
+        
+        setAppointmentsData(appointmentsByPatient)
+        console.log("Updated appointments data:", appointmentsByPatient)
+      }
+    } catch (error) {
+      console.error('Error fetching appointments:', error)
+    }
+  }
+  
+  // Replace the useEffect for appointment fetching with this one that also
+  // includes a timer to refresh the data periodically
   useEffect(() => {
     if (!currentUser || !currentUser.id) return
     
-    const fetchAppointments = async () => {
-      try {
-        // Fetch all appointments
-        const response = await fetch('/api/appointments')
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch appointments')
-        }
-        
-        const data = await response.json()
-        
-        if (data.success && data.appointments && Array.isArray(data.appointments)) {
-          // Process appointments into a map of patient ID -> appointment data
-          const appointmentsByPatient: {[key: string]: {nextSession?: string, lastSession?: string}} = {}
-          
-          data.appointments.forEach((appointment: any) => {
-            const appointmentDate = new Date(appointment.date)
-            const patientId = appointment.patient?._id || appointment.patient?.id
-            
-            if (!patientId) return
-            
-            if (!appointmentsByPatient[patientId]) {
-              appointmentsByPatient[patientId] = {}
-            }
-            
-            // Format the appointment date and time for display
-            const formattedDate = format(appointmentDate, "MMM d, yyyy")
-            const formattedDateTime = `${formattedDate} at ${appointment.time}`
-            
-            // Get current date - using only date part for comparison (not time)
-            const now = new Date()
-            now.setHours(0, 0, 0, 0)
-            
-            // Check if this is a future or past appointment
-            if (appointmentDate >= now) {
-              // This is an upcoming appointment
-              // If we don't have a next session yet, or this one is sooner, use it
-              if (!appointmentsByPatient[patientId].nextSession || 
-                  new Date(appointment.date) < new Date(appointmentsByPatient[patientId].nextSession?.split(' at ')[0])) {
-                appointmentsByPatient[patientId].nextSession = formattedDateTime
-              }
-            } else {
-              // This is a past appointment
-              // If we don't have a last session yet, or this one is more recent, use it
-              if (!appointmentsByPatient[patientId].lastSession || 
-                  new Date(appointment.date) > new Date(appointmentsByPatient[patientId].lastSession?.split(' at ')[0])) {
-                appointmentsByPatient[patientId].lastSession = formattedDateTime
-              }
-            }
-          })
-          
-          setAppointmentsData(appointmentsByPatient)
-        }
-      } catch (error) {
-        console.error('Error fetching appointments:', error)
+    // Initial fetch
+    fetchAppointments()
+    
+    // Set up interval to refresh appointments data every 30 seconds
+    // This ensures the data stays current if appointments are modified elsewhere
+    const refreshInterval = setInterval(() => {
+      fetchAppointments()
+    }, 30000) // 30 seconds
+    
+    // Clean up the interval on unmount
+    return () => clearInterval(refreshInterval)
+  }, [currentUser])
+  
+  // Add a refresh handler for when the tab becomes visible again
+  useEffect(() => {
+    // Define the visibility change handler
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Refresh appointments data when the tab becomes visible again
+        fetchAppointments()
       }
     }
     
-    fetchAppointments()
+    // Add the event listener
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    // Clean up the event listener on unmount
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [currentUser])
+
+  // Also modify the patient dialog to fetch fresh data when opened
+  const showPatientDetails = async (patient: Patient) => {
+    // Show a loading state if needed
+    setSelectedPatient(null)
+    
+    // Fetch the latest appointment data before showing the dialog
+    await fetchAppointments()
+    
+    // Now set the selected patient and open the dialog
+    setSelectedPatient(patient)
+    setIsDialogOpen(true)
+  }
 
   const handleAcceptRequest = async (requestId: string) => {
     if (!currentUser || !currentUser.id) return
@@ -283,6 +361,24 @@ export default function PatientsPage() {
   )
 
   const pendingRequests = connectionRequests.filter(request => request.status === 'pending')
+
+  // Add this new useEffect to listen for appointment changes
+  useEffect(() => {
+    // Define the event handler for appointment changes
+    const handleAppointmentChanged = () => {
+      console.log('Appointment changed event received in patients page')
+      // Refresh the appointments data
+      fetchAppointments()
+    }
+    
+    // Add the event listener
+    window.addEventListener('appointmentChanged', handleAppointmentChanged)
+    
+    // Clean up the event listener when the component unmounts
+    return () => {
+      window.removeEventListener('appointmentChanged', handleAppointmentChanged)
+    }
+  }, []) // Empty dependency array means this runs once on mount
 
   return (
     <DashboardLayout>
@@ -390,8 +486,7 @@ export default function PatientsPage() {
                       size="sm"
                         className="w-[100px]"
                       onClick={() => {
-                        setSelectedPatient(patient)
-                        setIsDialogOpen(true)
+                        showPatientDetails(patient)
                       }}
                     >
                       <BarChart3 className="mr-2 h-4 w-4" />
@@ -606,13 +701,14 @@ export default function PatientsPage() {
                       <CardDescription>Scheduled sessions with this patient</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      {appointmentsData[selectedPatient.id]?.nextSession ? (
+                      {appointmentsData[selectedPatient.id]?.nextSession && 
+                       !String(appointmentsData[selectedPatient.id]?.nextSession).includes('cancelled') ? (
                         <div className="space-y-4">
                           <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-4">
                               <Calendar className="h-8 w-8 text-primary" />
                               <div>
-                                <p className="font-medium">{appointmentsData[selectedPatient.id].nextSession}</p>
+                                <p className="font-medium">{appointmentsData[selectedPatient.id]?.nextSession}</p>
                                 <p className="text-sm text-muted-foreground">50-minute session</p>
                   </div>
                 </div>
