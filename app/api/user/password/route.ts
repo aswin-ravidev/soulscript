@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { User } from '@/lib/models/User';
 import { withAuth } from '@/lib/auth';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 // PATCH - Update the user's password
 export async function PATCH(request: NextRequest) {
