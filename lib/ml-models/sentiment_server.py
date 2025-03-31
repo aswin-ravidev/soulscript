@@ -5,6 +5,7 @@ import torch.nn as nn
 from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 import joblib
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -19,6 +20,9 @@ sentiment_categories = [
     "Stress",
     "Suicidal"
 ]
+
+
+MODEL_DIR = os.environ.get('MODEL_DIR', 'lib/ml-models')
 
 # Define the same model architecture as training
 class SimpleNN(nn.Module):
@@ -40,7 +44,7 @@ class SimpleNN(nn.Module):
 
 # Load the fitted TF-IDF vectorizer
 try:
-    tfidf = joblib.load('lib/ml-models/tfidf_vectorizer.pkl')
+    tfidf = joblib.load(os.path.join(MODEL_DIR, 'tfidf_vectorizer.pkl'))
 except FileNotFoundError:
     print("Error: TF-IDF vectorizer not found. Please ensure you have saved it from your training.")
     exit(1)
@@ -49,7 +53,7 @@ except FileNotFoundError:
 input_size = 10000  # max_features from TfidfVectorizer
 num_classes = len(sentiment_categories)
 model = SimpleNN(input_size=input_size, num_classes=num_classes)
-model.load_state_dict(torch.load('lib/ml-models/best_model.pth'))
+model.load_state_dict(torch.load(os.path.join(MODEL_DIR, 'best_model.pth')))        
 model.eval()
 
 @app.route('/analyze', methods=['POST'])
@@ -82,4 +86,5 @@ def analyze_sentiment():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(port=5000) 
+    port = int(os.environ.get('PORT', 5000))
+app.run(host='0.0.0.0', port=port)

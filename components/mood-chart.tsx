@@ -1,5 +1,5 @@
 "use client"
-import { Chart, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
 
 const data = [
@@ -23,53 +23,62 @@ export function MoodChart() {
   return (
     <ChartContainer
       className="h-[300px]"
-      data={data}
-      tooltipContent={({ payload }) => {
-        if (!payload?.length) return null
-        const { date, mood, anxiety } = payload[0].payload
-        return (
-          <ChartTooltipContent>
-            <p className="text-sm font-medium">{date}</p>
-            <p className="text-sm text-muted-foreground">
-              Mood: {mood}/5 • Anxiety: {anxiety}/5
-            </p>
-          </ChartTooltipContent>
-        )
+      config={{
+        mood: {
+          label: "Mood",
+          color: "#4f46e5",
+        },
+        anxiety: {
+          label: "Anxiety",
+          color: "#f97316",
+        },
       }}
     >
-      <Chart>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-            <XAxis dataKey="date" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-            <YAxis
-              stroke="#888888"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(value) => `${value}`}
-              domain={[0, 5]}
-            />
-            <Line
-              type="monotone"
-              dataKey="mood"
-              stroke="#4f46e5"
-              strokeWidth={2}
-              dot={{ r: 4, strokeWidth: 2 }}
-              activeDot={{ r: 6, strokeWidth: 2 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="anxiety"
-              stroke="#f97316"
-              strokeWidth={2}
-              dot={{ r: 4, strokeWidth: 2 }}
-              activeDot={{ r: 6, strokeWidth: 2 }}
-            />
-            <ChartTooltip cursor={false} content={<></>} wrapperStyle={{ outline: "none" }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </Chart>
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+          <XAxis dataKey="date" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
+          <YAxis
+            stroke="#888888"
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(value) => `${value}`}
+            domain={[0, 5]}
+          />
+          <Line
+            type="monotone"
+            dataKey="mood"
+            stroke="#4f46e5"
+            strokeWidth={2}
+            dot={{ r: 4, strokeWidth: 2 }}
+            activeDot={{ r: 6, strokeWidth: 2 }}
+          />
+          <Line
+            type="monotone"
+            dataKey="anxiety"
+            stroke="#f97316"
+            strokeWidth={2}
+            dot={{ r: 4, strokeWidth: 2 }}
+            activeDot={{ r: 6, strokeWidth: 2 }}
+          />
+          <ChartTooltip 
+            content={({ active, payload }) => {
+              if (!active || !payload?.length) return null;
+              
+              return (
+                <ChartTooltipContent>
+                  <p className="text-sm font-medium">{payload[0].payload.date}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Mood: {payload[0].payload.mood}/5 • Anxiety: {payload[0].payload.anxiety}/5
+                  </p>
+                </ChartTooltipContent>
+              );
+            }}
+            cursor={false}
+            wrapperStyle={{ outline: "none" }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
     </ChartContainer>
   )
 }
-

@@ -327,7 +327,7 @@ export default function MessagesPage() {
         )
         
         // Clear the input field
-        setNewMessage("")
+    setNewMessage("")
       }
     } catch (error) {
       console.error('Error sending message:', error)
