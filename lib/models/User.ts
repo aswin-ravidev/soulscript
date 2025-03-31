@@ -45,6 +45,15 @@ const userSchema = new mongoose.Schema({
     required: function(this: any) { 
       return this.role === 'therapist'; 
     },
+    validate: {
+      validator: function(this: any, v: string) {
+        // Only validate if the user is a therapist
+        if (this.role !== 'therapist') return true;
+        // Ensure specialization is not empty and has at least 2 characters
+        return v && v.trim().length >= 2;
+      },
+      message: 'Therapists must provide a valid specialization (at least 2 characters)'
+    }
   },
   bio: {
     type: String,

@@ -50,6 +50,12 @@ export async function POST(request: NextRequest) {
       name: user.name,
       email: user.email,
       role: user.role,
+      bio: user.bio,
+      specialization: user.specialization,
+      phoneNumber: user.phoneNumber,
+      contactEmail: user.contactEmail,
+      profileImage: user.profileImage,
+      emergencyContacts: user.emergencyContacts,
       createdAt: user.createdAt
     };
     

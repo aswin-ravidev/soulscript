@@ -37,13 +37,14 @@ const formSchema = z
   })
   .refine(
     (data) => {
-      if (data.userType === "therapist" && (!data.specialization || data.specialization.length < 2)) {
-        return false;
+      // Only validate specialization if userType is therapist
+      if (data.userType === "therapist") {
+        return data.specialization !== undefined && data.specialization.trim().length >= 2;
       }
       return true;
     },
     {
-      message: "Therapists must provide a specialization",
+      message: "Therapists must provide a specialization of at least 2 characters",
       path: ["specialization"],
     }
   );
@@ -74,20 +75,28 @@ export default function RegisterPage() {
     setRegisterError(null) // Clear any previous errors
 
     try {
+      // Prepare registration data
+      const registrationData = {
+        name: values.name,
+        email: values.email,
+        password: values.password,
+        role: values.userType,
+        // Only include specialization for therapists and ensure it's not empty
+        ...(values.userType === 'therapist' && values.specialization ? 
+          { specialization: values.specialization.trim() } : {}),
+        // Optional bio data
+        ...(values.bio ? { bio: values.bio.trim() } : {})
+      };
+      
+      console.log('Sending registration data:', { ...registrationData, password: '[REDACTED]' });
+      
       // Register user
       const registerResponse = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: values.name,
-          email: values.email,
-          password: values.password,
-          role: values.userType,
-          specialization: values.specialization,
-          bio: values.bio,
-        }),
+        body: JSON.stringify(registrationData),
       });
 
       const registerData = await registerResponse.json();
@@ -286,7 +295,7 @@ export default function RegisterPage() {
                   name="bio"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Professional Bio</FormLabel>
+                      <FormLabel>Professional Bio (in under 500 characters)</FormLabel>
                       <FormControl>
                         <Input placeholder="Brief description of your experience and approach" {...field} />
                       </FormControl>

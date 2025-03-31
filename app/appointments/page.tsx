@@ -32,6 +32,7 @@ interface ConnectedUser {
   name: string;
   email: string;
   specialization?: string;
+  profileImage?: string;
 }
 
 interface Appointment {
@@ -135,7 +136,8 @@ export default function AppointmentsPage() {
             _id: connection.user._id,
             id: connection.user._id, // For consistency
             name: connection.user.name,
-            email: connection.user.email
+            email: connection.user.email,
+            profileImage: connection.user.profileImage
           }))
           
           setConnectedPatients(patients)
@@ -158,7 +160,8 @@ export default function AppointmentsPage() {
             id: connection.therapist._id, // For consistency
             name: connection.therapist.name,
             email: connection.therapist.email,
-            specialization: connection.therapist.specialization || "General"
+            specialization: connection.therapist.specialization || "General",
+            profileImage: connection.therapist.profileImage
           }))
           
           setConnectedTherapists(therapists)
@@ -620,7 +623,9 @@ export default function AppointmentsPage() {
                       <div className="flex items-center gap-3">
                         <Avatar>
                           <AvatarImage 
-                            src="/placeholder-user.jpg" 
+                            src={userRole === "therapist" 
+                              ? (appointment.patient.profileImage || "/placeholder-user.jpg")
+                              : (appointment.therapist.profileImage || "/placeholder-user.jpg")} 
                             alt={userRole === "therapist" ? appointment.patient.name : appointment.therapist.name} 
                           />
                           <AvatarFallback>
@@ -707,7 +712,9 @@ export default function AppointmentsPage() {
                       <div className="flex items-center gap-3 mb-3">
                         <Avatar>
                           <AvatarImage 
-                            src="/placeholder-user.jpg" 
+                            src={userRole === "therapist" 
+                              ? (appointment.patient.profileImage || "/placeholder-user.jpg")
+                              : (appointment.therapist.profileImage || "/placeholder-user.jpg")} 
                             alt={userRole === "therapist" ? appointment.patient.name : appointment.therapist.name} 
                           />
                           <AvatarFallback>
@@ -791,7 +798,9 @@ export default function AppointmentsPage() {
                       <div className="flex items-center gap-3 mb-3">
                         <Avatar>
                           <AvatarImage 
-                            src="/placeholder-user.jpg" 
+                            src={userRole === "therapist" 
+                              ? (appointment.patient.profileImage || "/placeholder-user.jpg")
+                              : (appointment.therapist.profileImage || "/placeholder-user.jpg")} 
                             alt={userRole === "therapist" ? appointment.patient.name : appointment.therapist.name} 
                           />
                           <AvatarFallback>

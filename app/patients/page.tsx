@@ -28,6 +28,7 @@ interface ConnectionRequest {
     _id: string;
     name: string;
     email: string;
+    profileImage?: string;
   };
   therapist: string;
   status: 'pending' | 'accepted' | 'rejected';
@@ -118,7 +119,7 @@ export default function PatientsPage() {
         email: req.user.email,
         since: new Date(req.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
         status: "Active",
-        image: "/placeholder-user.jpg",
+        image: req.user.profileImage || "/placeholder-user.jpg",
         connectionId: req._id
       }))
       
@@ -517,7 +518,7 @@ export default function PatientsPage() {
                     <CardHeader className="pb-2">
                       <div className="flex items-center gap-3">
                         <Avatar>
-                          <AvatarImage src="/placeholder-user.jpg" alt={request.user.name} />
+                          <AvatarImage src={request.user.profileImage || "/placeholder-user.jpg"} alt={request.user.name} />
                           <AvatarFallback>
                             {request.user.name
                               .split(" ")

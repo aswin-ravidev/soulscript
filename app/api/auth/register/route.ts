@@ -41,12 +41,24 @@ export async function POST(request: NextRequest) {
     }
     
     // Validate therapist data
-    if (role === 'therapist' && !specialization) {
-      console.log('Missing specialization for therapist role');
-      return NextResponse.json(
-        { success: false, message: 'Therapists must provide a specialization' },
-        { status: 400 }
-      );
+    if (role === 'therapist') {
+      console.log('Validating therapist data, specialization:', specialization);
+      
+      if (!specialization || specialization.trim() === '') {
+        console.log('Missing or empty specialization for therapist role');
+        return NextResponse.json(
+          { success: false, message: 'Therapists must provide a specialization' },
+          { status: 400 }
+        );
+      }
+      
+      if (specialization.trim().length < 2) {
+        console.log('Specialization too short for therapist role');
+        return NextResponse.json(
+          { success: false, message: 'Specialization must be at least 2 characters' },
+          { status: 400 }
+        );
+      }
     }
     
     // Create user object

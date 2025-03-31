@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     if (therapistId) {
       // Get all connection requests for this therapist
       const requests = await ConnectionRequest.find({ therapist: therapistId })
-        .populate('user', 'name email')
+        .populate('user', 'name email profileImage')
         .sort({ createdAt: -1 })
         .lean();
       
@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
     else if (userId) {
       // Get all connection requests by this user
       const requests = await ConnectionRequest.find({ user: userId })
-        .populate('therapist', 'name email specialization')
+        .populate('therapist', 'name email specialization profileImage')
         .sort({ createdAt: -1 })
         .lean();
       

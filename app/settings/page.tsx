@@ -50,6 +50,8 @@ export default function SettingsPage() {
   
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [passwordError, setPasswordError] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   // Get current user from localStorage
   useEffect(() => {
@@ -94,10 +96,10 @@ export default function SettingsPage() {
       const data = await response.json()
       
       if (data.success) {
-        // Update the user data in localStorage
-        const updatedUser = { ...currentUser, ...profileData }
-        localStorage.setItem('user', JSON.stringify(updatedUser))
-        setCurrentUser(updatedUser)
+        // Update the user data in localStorage with the data returned from the server
+        // This ensures all fields, including emergencyContacts, are properly formatted
+        localStorage.setItem('user', JSON.stringify(data.user))
+        setCurrentUser(data.user)
         
         toast({
           title: "Profile Updated",
@@ -150,21 +152,86 @@ export default function SettingsPage() {
     }
   }
 
-  const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Reset file preview when dialog closes
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      setSelectedFile(null)
+      setPreviewUrl(null)
+    }
+  }
+
+  // Handle file selection for preview
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-
-    // In a real app, you would upload the file to a server or cloud storage
-    // For now, we'll simulate this with a timeout
+    
+    setSelectedFile(file)
+    
+    // Create a preview URL for the selected image
+    const reader = new FileReader()
+    reader.onload = () => {
+      setPreviewUrl(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+  
+  // Handle the actual upload when button is clicked
+  const handleUploadClick = async () => {
+    if (!selectedFile) {
+      toast({
+        title: "No File Selected",
+        description: "Please select an image file to upload.",
+        variant: "destructive"
+      })
+      return
+    }
+    
     setIsLoading(true)
     
-    setTimeout(() => {
-      toast({
-        title: "Profile Picture Updated",
-        description: "Your profile picture has been updated successfully."
+    try {
+      // Create a FormData object to send the file
+      const formData = new FormData()
+      formData.append('file', selectedFile)
+      
+      // Send the file to the backend API
+      const response = await fetch('/api/user/profile-image', {
+        method: 'POST',
+        body: formData
       })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to upload profile picture')
+      }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        // Update the user data in localStorage with the data returned from the server
+        localStorage.setItem('user', JSON.stringify(data.user))
+        setCurrentUser(data.user)
+        
+        toast({
+          title: "Profile Picture Updated",
+          description: "Your profile picture has been updated successfully."
+        })
+        
+        // Close the dialog
+        setPreviewUrl(null)
+        setSelectedFile(null)
+        return true // Return true to indicate successful upload (for the dialog to close)
+      }
+    } catch (error) {
+      console.error('Error uploading profile picture:', error)
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : "Failed to upload profile picture. Please try again.",
+        variant: "destructive"
+      })
+      return false // Return false to keep dialog open
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   const handleChangePassword = async () => {
@@ -234,24 +301,24 @@ export default function SettingsPage() {
   return (
     <DashboardLayout>
       <div className="container mx-auto px-4 md:px-6 py-6 max-w-screen-xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground">Manage your profile and account settings</p>
-        </div>
+      </div>
 
-        <Card>
-          <CardHeader>
+          <Card>
+            <CardHeader>
             <CardTitle>Profile Settings</CardTitle>
             <CardDescription>Update your profile information and manage your account</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+            </CardHeader>
+            <CardContent className="space-y-6">
             <div className="flex flex-col items-center sm:flex-row gap-6">
               <div className="flex flex-col items-center gap-4">
                 <Avatar className="h-24 w-24">
-                  <AvatarImage src="/placeholder-user.jpg" alt={currentUser?.name || "User"} />
+                  <AvatarImage src={currentUser?.profileImage || "/placeholder-user.jpg"} alt={currentUser?.name || "User"} />
                   <AvatarFallback>{currentUser?.name?.charAt(0) || "U"}</AvatarFallback>
                 </Avatar>
-                <Dialog>
+                <Dialog onOpenChange={handleDialogOpenChange}>
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">Change Picture</Button>
                   </DialogTrigger>
@@ -263,13 +330,25 @@ export default function SettingsPage() {
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
+                      {previewUrl && (
+                        <div className="mb-4 flex justify-center">
+                          <div className="relative w-40 h-40 rounded-full overflow-hidden border-2 border-gray-200">
+                            <img 
+                              src={previewUrl}
+                              alt="Preview" 
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="grid gap-2">
                         <Label htmlFor="picture">Profile Picture</Label>
                         <Input 
                           id="picture" 
                           type="file" 
                           accept="image/*"
-                          onChange={handleProfileImageUpload}
+                          onChange={handleFileSelect}
                         />
                       </div>
                     </div>
@@ -277,7 +356,17 @@ export default function SettingsPage() {
                       <DialogClose asChild>
                         <Button variant="outline">Cancel</Button>
                       </DialogClose>
-                      <Button disabled={isLoading}>
+                      <Button 
+                        disabled={isLoading || !selectedFile}
+                        onClick={async () => {
+                          const success = await handleUploadClick();
+                          if (success) {
+                            document.querySelector('[data-dialog-close]')?.dispatchEvent(
+                              new MouseEvent('click', { bubbles: true })
+                            );
+                          }
+                        }}
+                      >
                         {isLoading ? "Uploading..." : "Upload Picture"}
                       </Button>
                     </DialogFooter>
@@ -308,12 +397,12 @@ export default function SettingsPage() {
                   />
                   <p className="text-xs text-muted-foreground">Your email is used for login and cannot be changed</p>
                 </div>
+                </div>
               </div>
-            </div>
 
-            <Separator />
+              <Separator />
 
-            <div className="space-y-4">
+              <div className="space-y-4">
               <h3 className="text-lg font-medium">Professional Information</h3>
               
               {currentUser?.role === "therapist" && (
@@ -337,12 +426,12 @@ export default function SettingsPage() {
                   value={profileData.bio}
                   onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
                 />
+                </div>
               </div>
-            </div>
 
-            <Separator />
+              <Separator />
 
-            <div className="space-y-4">
+              <div className="space-y-4">
               <h3 className="text-lg font-medium">Contact Information</h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-2">
@@ -354,7 +443,7 @@ export default function SettingsPage() {
                     value={profileData.contactEmail}
                     onChange={(e) => setProfileData({...profileData, contactEmail: e.target.value})}
                   />
-                </div>
+                    </div>
                 <div className="grid gap-2">
                   <Label htmlFor="phone">Phone Number</Label>
                   <Input 
@@ -365,12 +454,12 @@ export default function SettingsPage() {
                     onChange={(e) => setProfileData({...profileData, phoneNumber: e.target.value})}
                   />
                 </div>
+                </div>
               </div>
-            </div>
 
-            <Separator />
-                
-            <div className="space-y-4">
+              <Separator />
+
+              <div className="space-y-4">
               <h3 className="text-lg font-medium">Emergency Contacts</h3>
               <p className="text-sm text-muted-foreground">These contacts may be reached in case of emergency</p>
               
@@ -424,7 +513,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Second Emergency Contact */}
               <div className="space-y-4 p-4 border rounded-md">
                 <h4 className="font-medium">Emergency Contact 2</h4>
@@ -473,15 +562,15 @@ export default function SettingsPage() {
                       }}
                     />
                   </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <Separator />
+              <Separator />
 
-            <div className="space-y-4">
+              <div className="space-y-4">
               <h3 className="text-lg font-medium">Account Management</h3>
-              <div className="space-y-2">
+                <div className="space-y-2">
                 <div className="grid gap-2">
                   <Label htmlFor="password">Password</Label>
                   <div className="flex gap-2">
@@ -514,8 +603,8 @@ export default function SettingsPage() {
                           value={passwordData.currentPassword}
                           onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
                         />
-                      </div>
-                      
+              </div>
+
                       <div className="grid gap-2">
                         <Label htmlFor="new-password">New Password</Label>
                         <Input 
@@ -535,7 +624,7 @@ export default function SettingsPage() {
                           value={passwordData.confirmPassword}
                           onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
                         />
-                      </div>
+                  </div>
                     </div>
                     
                     <DialogFooter>
@@ -587,15 +676,15 @@ export default function SettingsPage() {
                   </AlertDialog>
                 </div>
               </div>
-            </div>
-          </CardContent>
-          <CardFooter>
+              </div>
+            </CardContent>
+            <CardFooter>
             <Button onClick={handleSaveProfile} disabled={isLoading}>
               {isLoading ? "Saving..." : "Save Profile"}
             </Button>
-          </CardFooter>
-        </Card>
-      </div>
+            </CardFooter>
+          </Card>
+    </div>
     </DashboardLayout>
   )
 }

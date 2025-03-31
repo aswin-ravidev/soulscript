@@ -22,21 +22,8 @@ import { toast } from "@/components/ui/use-toast"
 import { useRouter } from "next/navigation"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-// Fallback therapist data in case API fails
-const fallbackTherapists = [
-  {
-    id: "1",
-    name: "Dr. Sarah Johnson",
-    specialty: "Anxiety & Depression",
-    experience: "Available",
-    rating: 4.9,
-    reviews: 124,
-    availability: "Mon, Wed, Fri",
-    status: "Available",
-    bio: "Specializing in cognitive behavioral therapy for anxiety and depression. I help patients develop coping strategies and build resilience.",
-    image: "/placeholder-user.jpg",
-  }
-]
+// Empty fallback array instead of sample data
+const fallbackTherapists: any[] = []
 
 interface Therapist {
   id: string;
@@ -352,12 +339,12 @@ export default function TherapistsPage() {
           <div className="flex justify-center items-center py-12">
             <p>Loading therapists...</p>
           </div>
-        ) : error && therapists.length === 0 ? (
+        ) : error ? (
           <div className="text-center py-12">
             <User className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium">No Therapists Found</h3>
+            <h3 className="text-lg font-medium">No Therapists Available</h3>
             <p className="text-muted-foreground">
-              We couldn't find any registered therapists at the moment.
+              There are currently no therapists registered in the system.
             </p>
           </div>
         ) : (
@@ -369,10 +356,19 @@ export default function TherapistsPage() {
             
             {/* All Therapists Tab */}
             <TabsContent value="all" className="space-y-4">
+              {filteredTherapists.length === 0 ? (
+                <div className="text-center py-12">
+                  <User className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium">No Therapists Found</h3>
+                  <p className="text-muted-foreground">
+                    We couldn't find any therapists matching your criteria.
+                  </p>
+                </div>
+              ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {filteredTherapists
-                  .filter(therapist => connectionStatus[therapist.id]?.status !== 'accepted')
-                  .map((therapist) => (
+                  {filteredTherapists
+                    .filter(therapist => connectionStatus[therapist.id]?.status !== 'accepted')
+                    .map((therapist) => (
             <Card key={therapist.id} className="flex flex-col">
               <CardHeader>
                 <div className="flex items-start gap-4">
@@ -399,19 +395,19 @@ export default function TherapistsPage() {
               <CardContent className="flex-grow">
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                            <span className="text-muted-foreground">Status:</span>
+                              <span className="text-muted-foreground">Status:</span>
                     <span>{therapist.experience}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Availability:</span>
                     <span>{therapist.availability}</span>
                   </div>
-                          {therapist.member_since && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Member since:</span>
-                              <span>{therapist.member_since}</span>
-                            </div>
-                          )}
+                            {therapist.member_since && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Member since:</span>
+                                <span>{therapist.member_since}</span>
+                              </div>
+                            )}
                   <div className="mt-2">
                     <Badge
                       variant="outline"
@@ -422,11 +418,11 @@ export default function TherapistsPage() {
                   </div>
                 </div>
               </CardContent>
-                      <CardFooter className="flex gap-2 border-t p-4">
+                        <CardFooter className="flex gap-2 border-t p-4">
                 <Button
                   variant="outline"
                   size="sm"
-                          className="flex-1"
+                            className="flex-1"
                   onClick={() => {
                     setSelectedTherapist(therapist)
                     setIsDialogOpen(true)
@@ -434,33 +430,34 @@ export default function TherapistsPage() {
                 >
                   View Profile
                 </Button>
-                        {connectionStatus[therapist.id]?.status === 'pending' ? (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            className="flex-1"
-                            disabled
-                          >
-                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                            Request Sent
-                          </Button>
-                        ) : (
+                          {connectionStatus[therapist.id]?.status === 'pending' ? (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="flex-1"
+                              disabled
+                            >
+                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              Request Sent
+                            </Button>
+                          ) : (
                 <Button
-                            variant={
-                              connectionStatus[therapist.id]?.status === 'rejected' ? "outline" : "default"
-                            }
+                              variant={
+                                connectionStatus[therapist.id]?.status === 'rejected' ? "outline" : "default"
+                              }
                   size="sm"
-                            className="flex-1"
-                            onClick={() => handleConnect(therapist)}
+                              className="flex-1"
+                              onClick={() => handleConnect(therapist)}
                 >
-                            <UserPlus className="h-4 w-4 mr-1" />
-                            {getConnectionButtonText(therapist.id)}
+                              <UserPlus className="h-4 w-4 mr-1" />
+                              {getConnectionButtonText(therapist.id)}
                 </Button>
-                        )}
+                          )}
               </CardFooter>
             </Card>
           ))}
         </div>
+              )}
             </TabsContent>
             
             {/* Connected Therapists Tab */}

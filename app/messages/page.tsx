@@ -18,6 +18,7 @@ interface User {
   name: string;
   email: string;
   role: string;
+  profileImage?: string;
 }
 
 interface Message {
@@ -143,6 +144,26 @@ export default function MessagesPage() {
     }
   }, [currentUser])
 
+  // Add visibility change handler to refresh data when tab becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && currentUser) {
+        console.log('Tab became visible, refreshing messages data')
+        fetchConversations()
+        if (activeConversation) {
+          fetchMessages(activeConversation._id)
+        }
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    // Clean up
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [currentUser, activeConversation])
+
   // Fetch messages when an active conversation is selected
   useEffect(() => {
     if (activeConversation) {
@@ -171,6 +192,12 @@ export default function MessagesPage() {
       console.log("Fetched conversations data:", data)
       
       if (data.success) {
+        // Add debugging logs for profile images
+        if (data.conversations && data.conversations.length > 0) {
+          console.log("First conversation other user:", data.conversations[0].otherUser)
+          console.log("Profile image exists:", !!data.conversations[0].otherUser.profileImage)
+        }
+        
         setConversations(data.conversations)
         
         // Set the first conversation as active if there are any and no active conversation is selected
@@ -210,13 +237,8 @@ export default function MessagesPage() {
         console.log("Fetched messages:", data.messages);
         if (data.messages.length > 0) {
           console.log("First message:", data.messages[0]);
-          console.log("Current user:", currentUser);
-          console.log("Is current user the sender?", 
-            (currentUser?.id && data.messages[0].sender?.id === currentUser.id) || 
-            (currentUser?.id && data.messages[0].sender?._id === currentUser.id) ||
-            (currentUser?._id && data.messages[0].sender?.id === currentUser._id) ||
-            (currentUser?._id && data.messages[0].sender?._id === currentUser._id)
-          );
+          const hasProfileImg = data.messages[0].sender?.profileImage || data.messages[0].receiver?.profileImage;
+          console.log("Message has profile image:", hasProfileImg);
         }
         setMessages(data.messages)
       }
@@ -229,6 +251,17 @@ export default function MessagesPage() {
       })
     } finally {
       setIsLoadingMessages(false)
+    }
+  }
+
+  // Set active conversation and force a profile image refresh
+  const selectConversation = (conversation: Conversation) => {
+    setActiveConversation(conversation);
+    
+    // Force a refresh of conversations to ensure profile images are loaded
+    if (currentUser) {
+      console.log("Refreshing conversations after selection");
+      setTimeout(() => fetchConversations(), 100);
     }
   }
 
@@ -269,7 +302,8 @@ export default function MessagesPage() {
             _id: currentUser._id,
             name: currentUser.name,
             email: currentUser.email,
-            role: currentUser.role
+            role: currentUser.role,
+            profileImage: currentUser.profileImage
           };
         }
         
@@ -369,11 +403,18 @@ export default function MessagesPage() {
                         className={`flex w-full items-center gap-3 rounded-lg p-2 text-left ${
                           activeConversation?._id === conversation._id ? "bg-muted" : "hover:bg-muted/50"
                         }`}
-                        onClick={() => setActiveConversation(conversation)}
+                        onClick={() => selectConversation(conversation)}
                       >
                         <div className="relative">
                           <Avatar>
-                            <AvatarImage src="/placeholder-user.jpg" alt={conversation.otherUser.name} />
+                            <AvatarImage 
+                              src={conversation.otherUser.profileImage || "/placeholder-user.jpg"} 
+                              alt={conversation.otherUser.name}
+                              onError={(e) => {
+                                console.log("Image load error:", e);
+                                (e.target as HTMLImageElement).src = "/placeholder-user.jpg";
+                              }}
+                            />
                             <AvatarFallback>
                               {conversation.otherUser.name
                                 .split(" ")
@@ -417,7 +458,14 @@ export default function MessagesPage() {
             <CardHeader className="border-b p-4">
               <div className="flex items-center gap-3">
                 <Avatar>
-                      <AvatarImage src="/placeholder-user.jpg" alt={activeConversation.otherUser.name} />
+                      <AvatarImage 
+                        src={activeConversation.otherUser.profileImage || "/placeholder-user.jpg"} 
+                        alt={activeConversation.otherUser.name}
+                        onError={(e) => {
+                          console.log("Active conversation image load error:", e);
+                          (e.target as HTMLImageElement).src = "/placeholder-user.jpg";
+                        }}
+                      />
                   <AvatarFallback>
                         {activeConversation.otherUser.name
                       .split(" ")

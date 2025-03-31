@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
         ]
       })
       .sort({ createdAt: 1 })
-      .populate('sender', 'name email role')
-      .populate('receiver', 'name email role');
+      .populate('sender', 'name email role profileImage')
+      .populate('receiver', 'name email role profileImage');
       
       console.log(`Found ${messages.length} messages with user ${otherUserId}`);
       
@@ -48,6 +48,29 @@ export async function GET(request: NextRequest) {
             { status: 404 }
           );
         }
+        
+        // Also get the current user with full details
+        const currentUser = await User.findById(user.id);
+        if (!currentUser) {
+          return NextResponse.json(
+            { success: false, message: 'Current user not found' },
+            { status: 404 }
+          );
+        }
+        
+        console.log("Other user found:", {
+          id: otherUser._id,
+          name: otherUser.name,
+          role: otherUser.role,
+          profileImage: otherUser.profileImage
+        });
+        
+        console.log("Current user found:", {
+          id: currentUser._id,
+          name: currentUser.name,
+          role: currentUser.role,
+          profileImage: currentUser.profileImage
+        });
         
         // Create welcome messages based on user roles
         const systemMessage = new Message({
@@ -71,8 +94,8 @@ export async function GET(request: NextRequest) {
           ]
         })
         .sort({ createdAt: 1 })
-        .populate('sender', 'name email role')
-        .populate('receiver', 'name email role');
+        .populate('sender', 'name email role profileImage')
+        .populate('receiver', 'name email role profileImage');
         
         console.log(`Now have ${updatedMessages.length} messages after initialization`);
         
@@ -93,70 +116,58 @@ export async function GET(request: NextRequest) {
       
       return NextResponse.json({ success: true, messages });
     } else {
-      // Get all conversations for the current user
-      // This query gets the latest message for each unique conversation partner
-      const conversations = await Message.aggregate([
-        {
-          $match: {
-            $or: [
-              { sender: user._id },
-              { receiver: user._id }
-            ]
-          }
-        },
-        {
-          $sort: { createdAt: -1 }
-        },
-        {
-          $group: {
-            _id: {
-              $cond: [
-                { $eq: ["$sender", user._id] },
-                "$receiver",
-                "$sender"
-              ]
-            },
-            latestMessage: { $first: "$$ROOT" }
-          }
-        },
-        {
-          $lookup: {
-            from: "users",
-            localField: "_id",
-            foreignField: "_id",
-            as: "otherUser"
-          }
-        },
-        {
-          $unwind: "$otherUser"
-        },
-        {
-          $project: {
-            _id: 1,
-            otherUser: {
-              _id: 1,
-              name: 1,
-              email: 1,
-              role: 1
-            },
-            latestMessage: 1,
-            unreadCount: {
-              $cond: [
-                { 
-                  $and: [
-                    { $eq: ["$latestMessage.receiver", user._id] },
-                    { $eq: ["$latestMessage.read", false] }
-                  ]
-                },
-                1,
-                0
-              ]
-            }
-          }
-        }
-      ]);
+      // Get all conversations for the current user - using a different approach
+      // First, find all messages where the user is either sender or receiver
+      const allMessages = await Message.find({
+        $or: [
+          { sender: user._id },
+          { receiver: user._id }
+        ]
+      })
+      .sort({ createdAt: -1 })
+      .populate('sender', 'name email role profileImage')
+      .populate('receiver', 'name email role profileImage')
+      .lean();
       
-      // For each conversation, get the unread count
+      console.log(`Found ${allMessages.length} total messages for user ${user._id}`);
+      
+      // Process messages into conversations
+      const conversationsMap = new Map();
+      
+      for (const message of allMessages) {
+        // Determine if the other user is the sender or receiver
+        const isUserSender = message.sender._id.toString() === user._id.toString() || 
+                            message.sender.id?.toString() === user._id.toString();
+        
+        const otherUser = isUserSender ? message.receiver : message.sender;
+        const otherUserId = otherUser._id.toString();
+        
+        // Skip if we've already seen this conversation (we only want the latest message)
+        if (conversationsMap.has(otherUserId)) continue;
+        
+        // Create a conversation entry with the other user and latest message
+        conversationsMap.set(otherUserId, {
+          _id: otherUserId,
+          otherUser: {
+            _id: otherUser._id,
+            id: otherUser._id.toString(),
+            name: otherUser.name,
+            email: otherUser.email,
+            role: otherUser.role,
+            profileImage: otherUser.profileImage || '/placeholder-user.jpg'
+          },
+          latestMessage: {
+            content: message.content,
+            createdAt: message.createdAt,
+            read: message.read
+          },
+          unreadCount: 0 // Will count below
+        });
+      }
+      
+      // Count unread messages for each conversation
+      const conversations = Array.from(conversationsMap.values());
+      
       for (const conversation of conversations) {
         const unreadCount = await Message.countDocuments({
           sender: conversation._id,
@@ -165,6 +176,15 @@ export async function GET(request: NextRequest) {
         });
         
         conversation.unreadCount = unreadCount;
+      }
+      
+      console.log(`Processed into ${conversations.length} conversations`);
+      if (conversations.length > 0) {
+        console.log("First conversation:", {
+          otherUser: conversations[0].otherUser,
+          hasProfileImage: !!conversations[0].otherUser.profileImage,
+          profileImagePath: conversations[0].otherUser.profileImage
+        });
       }
       
       return NextResponse.json({ success: true, conversations });
@@ -220,8 +240,8 @@ export async function POST(request: NextRequest) {
     
     // Populate sender and receiver
     const populatedMessage = await Message.findById(newMessage._id)
-      .populate('sender', 'name email role')
-      .populate('receiver', 'name email role');
+      .populate('sender', 'name email role profileImage')
+      .populate('receiver', 'name email role profileImage');
     
     return NextResponse.json(
       { success: true, message: 'Message sent successfully', data: populatedMessage },

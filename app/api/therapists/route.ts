@@ -9,6 +9,7 @@ interface TherapistDocument {
   role: string;
   specialization?: string;
   bio?: string;
+  profileImage?: string;
   createdAt?: Date;
 }
 
@@ -18,7 +19,7 @@ export async function GET() {
     
     // Find all users with role "therapist"
     const therapists = await User.find({ role: 'therapist' })
-      .select('name email role specialization bio createdAt')
+      .select('name email role specialization bio profileImage createdAt')
       .lean();
     
     if (!therapists || therapists.length === 0) {
@@ -39,7 +40,7 @@ export async function GET() {
       availability: 'Mon, Wed, Fri',
       status: 'Available',
       bio: therapist.bio || `${therapist.name} is a registered therapist on SoulScript.`,
-      image: '/placeholder-user.jpg',
+      image: therapist.profileImage || '/placeholder-user.jpg',
       email: therapist.email,
       member_since: therapist.createdAt ? new Date(therapist.createdAt).toLocaleDateString() : new Date().toLocaleDateString()
     }));

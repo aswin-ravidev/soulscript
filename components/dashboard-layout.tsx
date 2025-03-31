@@ -15,16 +15,17 @@ import { cn } from "@/lib/utils"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
-  userType?: "user" | "therapist"
+  initialUserRole?: "user" | "therapist"
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function DashboardLayout({ children, initialUserRole = "user" }: DashboardLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [userType, setUserType] = useState<"user" | "therapist">("user")
+  const [userRole, setUserRole] = useState<"user" | "therapist">(initialUserRole)
   const [userName, setUserName] = useState<string>("")
   const [userInitials, setUserInitials] = useState<string>("JD")
+  const [profileImage, setProfileImage] = useState<string>("/placeholder-user.jpg")
 
   useEffect(() => {
     // Get user data from localStorage
@@ -33,8 +34,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       try {
         const user = JSON.parse(userData)
         // Set user type based on role in user data
-        setUserType(user.role || "user")
+        setUserRole(user.role || "user")
         setUserName(user.name || "")
+        setProfileImage(user.profileImage || "/placeholder-user.jpg")
         
         // Set user initials
         if (user.name) {
@@ -48,6 +50,29 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       } catch (error) {
         console.error('Error parsing user data:', error)
       }
+    }
+  }, [])
+
+  // Listen for storage events to update profile image when it changes
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const userData = localStorage.getItem('user')
+      if (userData) {
+        try {
+          const user = JSON.parse(userData)
+          setProfileImage(user.profileImage || "/placeholder-user.jpg")
+        } catch (error) {
+          console.error('Error parsing user data:', error)
+        }
+      }
+    }
+    
+    // Add event listener
+    window.addEventListener('storage', handleStorageChange)
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
     }
   }, [])
 
@@ -112,7 +137,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     },
   ]
 
-  const navItems = userType === "therapist" ? therapistNavItems : userNavItems
+  const navItems = userRole === "therapist" ? therapistNavItems : userNavItems
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -179,7 +204,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
             <div className="flex items-center gap-2">
               <Avatar>
-                <AvatarImage src="/placeholder-user.jpg" alt="User" />
+                <AvatarImage src={profileImage} alt={userName || "User"} />
                 <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
               <Button 

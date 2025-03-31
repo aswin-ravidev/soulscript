@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
     
     // Get appointments without filtering for status
     const allAppointments = await Appointment.find(query)
-      .populate('patient', 'name email')
-      .populate('therapist', 'name email specialization')
+      .populate('patient', 'name email profileImage')
+      .populate('therapist', 'name email specialization profileImage')
       .sort({ date: 1 });
     
     // Get current date and time
@@ -147,8 +147,8 @@ export async function POST(request: NextRequest) {
     
     // Return the new appointment
     const populatedAppointment = await Appointment.findById(appointment._id)
-      .populate('patient', 'name email')
-      .populate('therapist', 'name email specialization');
+      .populate('patient', 'name email profileImage')
+      .populate('therapist', 'name email specialization profileImage');
     
     return NextResponse.json(
       { success: true, message: 'Appointment created', appointment: populatedAppointment },
@@ -221,8 +221,8 @@ export async function PATCH(request: NextRequest) {
     
     // Get updated appointment with populated references
     const updatedAppointment = await Appointment.findById(appointmentId)
-      .populate('patient', 'name email')
-      .populate('therapist', 'name email specialization');
+      .populate('patient', 'name email profileImage')
+      .populate('therapist', 'name email specialization profileImage');
     
     return NextResponse.json(
       { success: true, message: 'Appointment updated', appointment: updatedAppointment }
