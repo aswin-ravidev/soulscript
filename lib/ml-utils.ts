@@ -68,7 +68,7 @@ export async function predictMentalHealthClass(text: string): Promise<Prediction
     }
     
     // URL of the sentiment server
-    const serverUrl = 'http://localhost:5000';
+    const serverUrl = process.env.NEXT_PUBLIC_SENTIMENT_API_URL || 'http://localhost:5000';
     
     // Create a request with timeout
     const controller = new AbortController();
