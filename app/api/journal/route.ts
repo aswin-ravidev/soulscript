@@ -99,21 +99,29 @@ export async function POST(request: NextRequest) {
     // Handle emergency alerts for suicidal content
     if (mentalHealthClass === 'Suicidal') {
       console.log('Suicidal content detected, sending emergency alerts');
-      // Send async - don't wait for alerts to complete
-      sendSuicidalAlert(user._id, entry).catch(err => {
-        console.error('Error sending suicidal alert:', err);
+      
+      // Send immediate alerts for this entry
+      const alertResult = await sendSuicidalAlert(user._id.toString(), {
+        userId: user._id.toString(),
+        title,
+        content,
+        date: date || new Date(),
+        mentalHealthClass,
+        confidence
       });
+      
+      console.log('Emergency alert result:', alertResult);
     }
-    
-    // Check recent entry patterns
-    checkRecentEntriesAndAlert(user._id).catch(err => {
-      console.error('Error checking recent entry patterns:', err);
-    });
-    
-    return NextResponse.json(
-      { success: true, message: 'Journal entry created', entry },
-      { status: 201 }
-    );
+
+    // Check for concerning patterns in recent entries
+    const patternAlertResult = await checkRecentEntriesAndAlert(user._id.toString());
+    console.log('Pattern alert result:', patternAlertResult);
+
+    return NextResponse.json({ 
+      success: true, 
+      entry, 
+      message: mentalHealthClass === 'Suicidal' ? 'Emergency alerts sent for suicidal content' : 'Journal entry created successfully' 
+    }, { status: 201 });
   } catch (error) {
     console.error('Error creating journal entry:', error);
     return NextResponse.json(
