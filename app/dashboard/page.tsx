@@ -376,79 +376,21 @@ export default function DashboardPage() {
           </Tabs>
         ) : (
           // Regular User Dashboard
-          <Tabs defaultValue="overview" className="space-y-4">
+          <Tabs defaultValue="journal" className="space-y-4">
             <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="journal">Journal</TabsTrigger>
-              <TabsTrigger value="profile">Profile</TabsTrigger>
+              <TabsTrigger value="journal">
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Journal
+              </TabsTrigger>
+              <TabsTrigger value="insights" onClick={() => router.push('/user-insights')}>
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Insights
+              </TabsTrigger>
+              <TabsTrigger value="therapy" onClick={() => router.push('/therapy')}>
+                <Users className="mr-2 h-4 w-4" />
+                Therapy
+              </TabsTrigger>
             </TabsList>
-
-            <TabsContent value="overview" className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Entries</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{journalEntries.length}</div>
-                    <p className="text-xs text-muted-foreground">
-                      {journalEntries.length > 0 
-                        ? `${journalEntries.length} journal ${journalEntries.length === 1 ? 'entry' : 'entries'} recorded` 
-                        : 'Start journaling today!'}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Mood Today</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{latestMood || 'Not recorded'}</div>
-                    <p className="text-xs text-muted-foreground">
-                      {latestMood 
-                        ? `Last recorded on ${journalEntries[0] ? format(new Date(journalEntries[0].date), 'MMMM d, yyyy') : ''}` 
-                        : 'Record your first entry'}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Account Status</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">Active</div>
-                    <p className="text-xs text-muted-foreground">Member since {formatAccountDate()}</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Start</CardTitle>
-                  <CardDescription>Get started with SoulScript</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Button variant="outline" className="h-24 flex-col gap-2 justify-center" onClick={() => router.push('/journal/new')}>
-                      <BookOpen className="h-5 w-5" />
-                      <span>Create Journal Entry</span>
-                    </Button>
-                    <Button variant="outline" className="h-24 flex-col gap-2 justify-center" onClick={() => router.push('/therapists')}>
-                      <Users className="h-5 w-5" />
-                      <span>Find a Therapist</span>
-                    </Button>
-                    <Button variant="outline" className="h-24 flex-col gap-2 justify-center" onClick={() => router.push('/appointments')}>
-                      <Calendar className="h-5 w-5" />
-                      <span>Schedule a Session</span>
-                    </Button>
-                    <Button variant="outline" className="h-24 flex-col gap-2 justify-center" onClick={() => router.push('/settings')}>
-                      <Users className="h-5 w-5" />
-                      <span>Update Profile</span>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
 
             <TabsContent value="journal" className="space-y-4">
               <Card>
@@ -491,27 +433,53 @@ export default function DashboardPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="profile" className="space-y-4">
+            <TabsContent value="insights" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Your Profile</CardTitle>
-                  <CardDescription>Manage your account information</CardDescription>
+                  <CardTitle>Insights</CardTitle>
+                  <CardDescription>View your mental health insights</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
                     <div>
-                      <strong>Name:</strong> {userData?.name || 'Not set'}
+                      <strong>Latest Mood:</strong> {latestMood || 'Not recorded'}
                     </div>
                     <div>
-                      <strong>Email:</strong> {userData?.email || 'Not set'}
-                    </div>
-                    <div>
-                      <strong>Role:</strong> {userData?.role || 'User'}
+                      <strong>Total Entries:</strong> {journalEntries.length}
                     </div>
                   </div>
-                  <Button className="mt-4" onClick={() => router.push('/settings')}>
-                    Edit Profile
+                  <Button className="mt-4" onClick={() => router.push('/user-insights')}>
+                    View Detailed Insights
                   </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="therapy" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Therapy</CardTitle>
+                  <CardDescription>Find a therapist or schedule a session</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div>
+                      <strong>Find a Therapist:</strong>
+                    </div>
+                    <div>
+                      <Button className="mt-4" onClick={() => router.push('/therapists')}>
+                        Browse Therapists
+                      </Button>
+                    </div>
+                    <div>
+                      <strong>Schedule a Session:</strong>
+                    </div>
+                    <div>
+                      <Button className="mt-4" onClick={() => router.push('/appointments')}>
+                        Schedule a Session
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -521,4 +489,3 @@ export default function DashboardPage() {
     </DashboardLayout>
   )
 }
-
