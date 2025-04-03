@@ -3,6 +3,57 @@ import connectDB from '@/lib/mongodb';
 import { User } from '@/lib/models/User';
 import { withAuth } from '@/lib/auth';
 
+// GET - Get the current user's profile
+export async function GET(request: NextRequest) {
+  try {
+    // Authenticate user
+    const user = await withAuth(request);
+    if (!user || user.status === 401) {
+      return user; // Returns the error response from withAuth
+    }
+    
+    // Connect to database
+    await connectDB();
+    
+    // Get user from database
+    const userData = await User.findById(user._id).select('-password');
+    
+    if (!userData) {
+      return NextResponse.json(
+        { success: false, message: 'User not found' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json({
+      success: true,
+      user: {
+        _id: userData._id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        bio: userData.bio,
+        specialization: userData.specialization,
+        contactEmail: userData.contactEmail,
+        phoneNumber: userData.phoneNumber,
+        profileImage: userData.profileImage,
+        emergencyContacts: userData.emergencyContacts,
+        createdAt: userData.createdAt
+      }
+    });
+  } catch (error: any) {
+    console.error('Error fetching profile:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Failed to fetch profile',
+        error: error.message || 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
 // PATCH - Update the user's profile
 export async function PATCH(request: NextRequest) {
   try {

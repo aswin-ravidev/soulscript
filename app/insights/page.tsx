@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MoodChart } from "@/components/mood-chart"
@@ -8,11 +10,60 @@ import { InsightCard } from "@/components/insight-card"
 import { Brain, Calendar, Clock, Heart, TrendingUp } from "lucide-react"
 
 export default function InsightsPage() {
+  const router = useRouter()
+  const [isTherapist, setIsTherapist] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    // Check if user is a therapist
+    const checkUserRole = async () => {
+      try {
+        const token = localStorage.getItem('auth_token')
+        if (!token) {
+          // Not logged in, redirect to login
+          router.push('/login')
+          return
+        }
+
+        const response = await fetch('/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.user && data.user.role === 'therapist') {
+            setIsTherapist(true)
+          } else {
+            // Not a therapist, redirect to user insights
+            router.push('/user-insights')
+          }
+        } else {
+          // Error fetching user data, redirect to login
+          router.push('/login')
+        }
+      } catch (error) {
+        console.error('Error checking user role:', error)
+        router.push('/login')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    checkUserRole()
+  }, [router])
+
+  // Show nothing while checking user role
+  if (isLoading || !isTherapist) {
+    return null
+  }
+
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Insights</h1>
-        <p className="text-muted-foreground">Understand your emotional patterns and growth</p>
+        <h1 className="text-3xl font-bold tracking-tight">Therapist Insights</h1>
+        <p className="text-muted-foreground">Monitor your patients' emotional patterns and growth</p>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">

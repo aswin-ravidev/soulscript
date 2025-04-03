@@ -2,7 +2,8 @@
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
 
-const data = [
+// Default data if none is provided
+const defaultData = [
   { date: "Mar 1", mood: 3, anxiety: 2 },
   { date: "Mar 2", mood: 4, anxiety: 2 },
   { date: "Mar 3", mood: 3, anxiety: 3 },
@@ -19,7 +20,15 @@ const data = [
   { date: "Mar 14", mood: 5, anxiety: 1 },
 ]
 
-export function MoodChart() {
+interface MoodChartProps {
+  data?: Array<{
+    date: string;
+    mood: number;
+    anxiety: number;
+  }>;
+}
+
+export function MoodChart({ data = defaultData }: MoodChartProps) {
   return (
     <ChartContainer
       className="h-[300px]"

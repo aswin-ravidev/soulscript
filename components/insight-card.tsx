@@ -5,12 +5,12 @@ interface InsightCardProps {
   title: string
   value: string
   description: string
-  trend: string
+  trend?: string
   icon: LucideIcon
 }
 
 export function InsightCard({ title, value, description, trend, icon: Icon }: InsightCardProps) {
-  const isPositive = trend.startsWith("+")
+  const isPositive = trend ? trend.startsWith("+") : false
 
   return (
     <Card>
@@ -25,9 +25,10 @@ export function InsightCard({ title, value, description, trend, icon: Icon }: In
             <Icon className="h-5 w-5 text-primary" />
           </div>
         </div>
-        <div className={`mt-4 text-xs font-medium ${isPositive ? "text-green-600" : "text-red-600"}`}>{trend}</div>
+        {trend && (
+          <div className={`mt-4 text-xs font-medium ${isPositive ? "text-green-600" : "text-red-600"}`}>{trend}</div>
+        )}
       </CardContent>
     </Card>
   )
 }
-

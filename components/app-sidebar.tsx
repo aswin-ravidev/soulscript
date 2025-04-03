@@ -14,22 +14,63 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { LogoutButton } from "@/components/logout-button"
+import { useState, useEffect } from "react"
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const [userRole, setUserRole] = useState<string>('user')
+
+  useEffect(() => {
+    // Get user role from localStorage
+    const fetchUserRole = async () => {
+      try {
+        const token = localStorage.getItem('auth_token')
+        if (token) {
+          const response = await fetch('/api/auth/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (data.user && data.user.role) {
+              setUserRole(data.user.role)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user role:', error)
+      }
+    }
+
+    fetchUserRole()
+  }, [])
 
   const isActive = (path: string) => {
     return pathname === path
   }
 
-  const mainNavItems = [
+  // Create different navigation items based on user role
+  const userMainNavItems = [
     { name: "Home", href: "/dashboard", icon: Home },
     { name: "Journal", href: "/journal", icon: BookOpen },
     { name: "New Entry", href: "/journal/new", icon: PenSquare },
-    { name: "Insights", href: "/insights", icon: LineChart },
+    { name: "Insights", href: "/user-insights", icon: LineChart },
     { name: "Calendar", href: "/calendar", icon: Calendar },
     { name: "Community", href: "/community", icon: Users },
   ]
+
+  const therapistMainNavItems = [
+    { name: "Home", href: "/dashboard", icon: Home },
+    { name: "Journal", href: "/journal", icon: BookOpen },
+    { name: "New Entry", href: "/journal/new", icon: PenSquare },
+    { name: "Calendar", href: "/calendar", icon: Calendar },
+    { name: "Community", href: "/community", icon: Users },
+  ]
+
+  // Select the appropriate navigation items based on user role
+  const mainNavItems = userRole === 'therapist' ? therapistMainNavItems : userMainNavItems
 
   const accountNavItems = [
     { name: "Profile", href: "/profile", icon: User },
@@ -84,4 +125,3 @@ export function AppSidebar() {
     </Sidebar>
   )
 }
-

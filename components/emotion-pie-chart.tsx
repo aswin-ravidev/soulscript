@@ -2,7 +2,8 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
 
-const data = [
+// Default data if none is provided
+const defaultData = [
   { name: "Happy", value: 35, color: "#4ade80" },
   { name: "Calm", value: 25, color: "#60a5fa" },
   { name: "Anxious", value: 15, color: "#fbbf24" },
@@ -11,7 +12,15 @@ const data = [
   { name: "Other", value: 10, color: "#c084fc" },
 ]
 
-export function EmotionPieChart() {
+interface EmotionPieChartProps {
+  data?: Array<{
+    name: string;
+    value: number;
+    color: string;
+  }>;
+}
+
+export function EmotionPieChart({ data = defaultData }: EmotionPieChartProps) {
   return (
     <div className="h-[300px] w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -45,4 +54,3 @@ export function EmotionPieChart() {
     </div>
   )
 }
-

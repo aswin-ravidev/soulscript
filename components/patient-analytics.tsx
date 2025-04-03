@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { fetchWithAuth } from "@/lib/client-auth"
 
 interface AnalyticsData {
   totalEntries: number;
@@ -40,7 +41,7 @@ export default function PatientAnalytics({ patientId }: PatientAnalyticsProps) {
       try {
         // Add a cache-busting query parameter to ensure fresh data
         const timestamp = new Date().getTime()
-        const response = await fetch(`/api/patients/analytics?patientId=${patientId}&_=${timestamp}`)
+        const response = await fetchWithAuth(`/api/patients/analytics?patientId=${patientId}&_=${timestamp}`)
         
         if (!response.ok) {
           throw new Error('Failed to fetch patient analytics')
@@ -83,7 +84,7 @@ export default function PatientAnalytics({ patientId }: PatientAnalyticsProps) {
           
           try {
             const timestamp = new Date().getTime()
-            const response = await fetch(`/api/patients/analytics?patientId=${patientId}&_=${timestamp}`)
+            const response = await fetchWithAuth(`/api/patients/analytics?patientId=${patientId}&_=${timestamp}`)
             
             if (!response.ok) {
               throw new Error('Failed to fetch patient analytics')

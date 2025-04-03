@@ -18,6 +18,24 @@ interface DashboardLayoutProps {
   initialUserRole?: "user" | "therapist"
 }
 
+const userNavItems = [
+  { title: 'Dashboard', href: '/dashboard', icon: Brain },
+  { title: 'Journal', href: '/journal', icon: BookOpen },
+  { title: 'Insights', href: '/insights', icon: BarChart3 },
+  { title: 'Therapists', href: '/therapists', icon: User },
+  { title: 'Messages', href: '/messages', icon: MessageSquare },
+  { title: 'Appointments', href: '/appointments', icon: Calendar },
+  { title: 'Settings', href: '/settings', icon: Settings },
+]
+
+const therapistNavItems = [
+  { title: 'Dashboard', href: '/dashboard', icon: Brain },
+  { title: 'Patients', href: '/patients', icon: User },
+  { title: 'Messages', href: '/messages', icon: MessageSquare },
+  { title: 'Appointments', href: '/appointments', icon: Calendar },
+  { title: 'Settings', href: '/settings', icon: Settings },
+]
+
 export function DashboardLayout({ children, initialUserRole = "user" }: DashboardLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
@@ -76,68 +94,7 @@ export function DashboardLayout({ children, initialUserRole = "user" }: Dashboar
     }
   }, [])
 
-  const userNavItems = [
-    {
-      title: "Dashboard",
-      href: "/dashboard",
-      icon: BarChart3,
-    },
-    {
-      title: "Journal",
-      href: "/journal",
-      icon: BookOpen,
-    },
-    {
-      title: "Therapists",
-      href: "/therapists",
-      icon: User,
-    },
-    {
-      title: "Messages",
-      href: "/messages",
-      icon: MessageSquare,
-    },
-    {
-      title: "Appointments",
-      href: "/appointments",
-      icon: Calendar,
-    },
-    {
-      title: "Settings",
-      href: "/settings",
-      icon: Settings,
-    },
-  ]
-
-  const therapistNavItems = [
-    {
-      title: "Dashboard",
-      href: "/dashboard",
-      icon: BarChart3,
-    },
-    {
-      title: "Patients",
-      href: "/patients",
-      icon: User,
-    },
-    {
-      title: "Messages",
-      href: "/messages",
-      icon: MessageSquare,
-    },
-    {
-      title: "Appointments",
-      href: "/appointments",
-      icon: Calendar,
-    },
-    {
-      title: "Settings",
-      href: "/settings",
-      icon: Settings,
-    },
-  ]
-
-  const navItems = userRole === "therapist" ? therapistNavItems : userNavItems
+  const navItems = userRole === "therapist" ? therapistNavItems : userNavItems;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -244,4 +201,3 @@ export function DashboardLayout({ children, initialUserRole = "user" }: Dashboar
     </div>
   )
 }
-
