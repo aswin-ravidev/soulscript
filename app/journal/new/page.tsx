@@ -10,6 +10,14 @@ import { useToast } from "@/components/ui/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { JournalEditor } from "@/components/journal-editor"
 import ReactMarkdown from "react-markdown"
+import { Mic, MicOff } from "lucide-react"
+
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
 
 export default function NewJournalPage() {
   const [title, setTitle] = useState("")
@@ -21,6 +29,61 @@ export default function NewJournalPage() {
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
   const { toast } = useToast()
+
+  // Speech recognition setup
+  const [speechRecognition, setSpeechRecognition] = useState<any>(null)
+  const [isListening, setIsListening] = useState(false)
+
+  useEffect(() => {
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    setSpeechRecognition(recognition);
+
+    return () => {
+      recognition.stop();
+    };
+  }, []);
+
+  const startListening = () => {
+    if (speechRecognition) {
+      speechRecognition.start();
+      setIsListening(true);
+    }
+  };
+
+  const stopListening = () => {
+    if (speechRecognition) {
+      speechRecognition.stop();
+      setIsListening(false);
+    }
+  };
+
+  useEffect(() => {
+    if (speechRecognition) {
+      speechRecognition.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((result: any) => result[0].transcript)
+          .join(' ');
+        setContent(prev => prev + ' ' + transcript.trim());
+      };
+
+      speechRecognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        toast({
+          title: "Error",
+          description: "Speech recognition encountered an error. Please try again.",
+          variant: "destructive",
+        });
+        stopListening();
+      };
+
+      speechRecognition.onend = () => {
+        setIsListening(false);
+      };
+    }
+  }, [speechRecognition, toast, content]);
 
   // Load user from localStorage on component mount
   useEffect(() => {
@@ -161,7 +224,27 @@ export default function NewJournalPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="content">Content</Label>
-              <JournalEditor content={content} onChange={setContent} />
+              <div className="relative">
+                <JournalEditor content={content} onChange={setContent} />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    if (isListening) {
+                      stopListening();
+                    } else {
+                      startListening();
+                    }
+                  }}
+                  className="absolute bottom-4 right-4 h-8 w-8"
+                >
+                  {isListening ? (
+                    <MicOff className="h-4 w-4" />
+                  ) : (
+                    <Mic className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
@@ -221,4 +304,3 @@ export default function NewJournalPage() {
     </div>
   )
 }
-
