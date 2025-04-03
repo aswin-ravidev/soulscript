@@ -77,6 +77,12 @@ export default function TherapistsPage() {
     }
   }, [])
 
+  // Handle profile image display
+  const getProfileImage = (user: any) => {
+    if (!user) return "/placeholder-user.jpg"
+    return user.profileImage || "/placeholder-user.jpg"
+  }
+
   // Fetch therapists from API
   useEffect(() => {
     const fetchTherapists = async () => {
@@ -301,6 +307,73 @@ export default function TherapistsPage() {
     }
   }
 
+  const renderTherapistCard = (therapist: Therapist) => {
+    return (
+      <Card key={therapist.id} className="flex flex-col">
+        <CardHeader>
+          <div className="flex items-start gap-4">
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={getProfileImage(therapist)} alt={therapist.name} />
+              <AvatarFallback>
+                {therapist.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 space-y-1">
+              <CardTitle>{therapist.name}</CardTitle>
+              <CardDescription>{therapist.specialty}</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{therapist.specialty}</div>
+          <div className="flex items-center space-x-2 mt-2">
+            <span className="text-muted-foreground">Availability:</span>
+            <span>{therapist.availability}</span>
+          </div>
+        </CardContent>
+        <CardFooter className="flex gap-2 border-t p-4">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => {
+              setSelectedTherapist(therapist)
+              setIsDialogOpen(true)
+            }}
+          >
+            View Profile
+          </Button>
+          {connectionStatus[therapist.id]?.status === 'pending' ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-1"
+              disabled
+            >
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              Request Sent
+            </Button>
+          ) : (
+            <Button
+              variant={
+                connectionStatus[therapist.id]?.status === 'rejected' ? "outline" : "default"
+              }
+              size="sm"
+              className="flex-1"
+              onClick={() => handleConnect(therapist)}
+            >
+              <UserPlus className="h-4 w-4 mr-1" />
+              {getConnectionButtonText(therapist.id)}
+            </Button>
+          )}
+        </CardFooter>
+      </Card>
+    )
+  }
+
   return (
     <DashboardLayout>
       <div className="container mx-auto px-4 md:px-6 py-6 max-w-screen-xl">
@@ -369,68 +442,7 @@ export default function TherapistsPage() {
                   {filteredTherapists
                     .filter(therapist => connectionStatus[therapist.id]?.status !== 'accepted')
                     .map((therapist) => (
-            <Card key={therapist.id} className="flex flex-col">
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={therapist.image} alt={therapist.name} />
-                    <AvatarFallback>
-                      {therapist.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 space-y-1">
-                    <CardTitle>{therapist.name}</CardTitle>
-                    <CardDescription>{therapist.specialty}</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{therapist.specialty}</div>
-                <div className="flex items-center space-x-2 mt-2">
-                  <span className="text-muted-foreground">Availability:</span>
-                  <span>{therapist.availability}</span>
-                </div>
-              </CardContent>
-                        <CardFooter className="flex gap-2 border-t p-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                            className="flex-1"
-                  onClick={() => {
-                    setSelectedTherapist(therapist)
-                    setIsDialogOpen(true)
-                  }}
-                >
-                  View Profile
-                </Button>
-                          {connectionStatus[therapist.id]?.status === 'pending' ? (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              className="flex-1"
-                              disabled
-                            >
-                              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                              Request Sent
-                            </Button>
-                          ) : (
-                <Button
-                              variant={
-                                connectionStatus[therapist.id]?.status === 'rejected' ? "outline" : "default"
-                              }
-                  size="sm"
-                              className="flex-1"
-                              onClick={() => handleConnect(therapist)}
-                >
-                              <UserPlus className="h-4 w-4 mr-1" />
-                              {getConnectionButtonText(therapist.id)}
-                </Button>
-                          )}
-              </CardFooter>
-            </Card>
+            renderTherapistCard(therapist)
           ))}
         </div>
               )}
@@ -447,7 +459,7 @@ export default function TherapistsPage() {
                         <CardHeader>
                           <div className="flex items-start gap-4">
                             <Avatar className="h-12 w-12">
-                              <AvatarImage src={therapist.image} alt={therapist.name} />
+                              <AvatarImage src={getProfileImage(therapist)} alt={therapist.name} />
                               <AvatarFallback>
                                 {therapist.name
                                   .split(" ")
@@ -532,7 +544,7 @@ export default function TherapistsPage() {
               </DialogHeader>
               <div className="flex items-start gap-4 py-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage src={selectedTherapist.image} alt={selectedTherapist.name} />
+                  <AvatarImage src={getProfileImage(selectedTherapist)} alt={selectedTherapist.name} />
                   <AvatarFallback>
                     {selectedTherapist.name
                       .split(" ")
