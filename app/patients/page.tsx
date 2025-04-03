@@ -45,8 +45,12 @@ interface Patient {
   lastSession?: string;
   nextSession?: string | null;
   status: string;
-  image: string;
+  profileImage?: string;
   connectionId?: string;
+}
+
+const getProfileImage = (patient: Patient) => {
+  return patient.profileImage || "/placeholder-user.jpg"
 }
 
 export default function PatientsPage() {
@@ -119,7 +123,7 @@ export default function PatientsPage() {
         email: req.user.email,
         since: new Date(req.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
         status: "Active",
-        image: req.user.profileImage || "/placeholder-user.jpg",
+        profileImage: req.user.profileImage,
         connectionId: req._id
       }))
       
@@ -425,7 +429,7 @@ export default function PatientsPage() {
                     <div className="flex justify-between">
                       <div className="flex items-center gap-3">
                         <Avatar>
-                          <AvatarImage src={patient.image} alt={patient.name} />
+                          <AvatarImage src={getProfileImage(patient)} alt={patient.name} />
                           <AvatarFallback>
                             {patient.name
                               .split(" ")
@@ -591,13 +595,13 @@ export default function PatientsPage() {
                 <DialogHeader>
                   <div className="flex items-center gap-4">
                   <Avatar className="h-12 w-12">
-                    <AvatarImage src={selectedPatient?.image} alt={selectedPatient?.name} />
-                    <AvatarFallback>{selectedPatient?.name.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={getProfileImage(selectedPatient)} alt={selectedPatient.name} />
+                    <AvatarFallback>{selectedPatient.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div>
-                    <DialogTitle>{selectedPatient?.name}</DialogTitle>
+                    <DialogTitle>{selectedPatient.name}</DialogTitle>
                     <DialogDescription>
-                      Patient since {selectedPatient?.since}
+                      Patient since {selectedPatient.since}
                     </DialogDescription>
                   </div>
                 </div>
@@ -778,4 +782,3 @@ export default function PatientsPage() {
     </DashboardLayout>
   )
 }
-
