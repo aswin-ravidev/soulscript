@@ -384,38 +384,14 @@ export default function TherapistsPage() {
                   <div className="flex-1 space-y-1">
                     <CardTitle>{therapist.name}</CardTitle>
                     <CardDescription>{therapist.specialty}</CardDescription>
-                    <div className="flex items-center text-sm">
-                      <Star className="mr-1 h-4 w-4 fill-primary text-primary" />
-                      <span>{therapist.rating}</span>
-                      <span className="text-muted-foreground ml-1">({therapist.reviews} reviews)</span>
-                    </div>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="flex-grow">
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                              <span className="text-muted-foreground">Status:</span>
-                    <span>{therapist.experience}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Availability:</span>
-                    <span>{therapist.availability}</span>
-                  </div>
-                            {therapist.member_since && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Member since:</span>
-                                <span>{therapist.member_since}</span>
-                              </div>
-                            )}
-                  <div className="mt-2">
-                    <Badge
-                      variant="outline"
-                      className="bg-green-50 text-green-700 hover:bg-green-50 hover:text-green-700"
-                    >
-                      {therapist.status}
-                    </Badge>
-                  </div>
+              <CardContent>
+                <div className="text-2xl font-bold">{therapist.specialty}</div>
+                <div className="flex items-center space-x-2 mt-2">
+                  <span className="text-muted-foreground">Availability:</span>
+                  <span>{therapist.availability}</span>
                 </div>
               </CardContent>
                         <CardFooter className="flex gap-2 border-t p-4">
@@ -482,38 +458,14 @@ export default function TherapistsPage() {
                             <div className="flex-1 space-y-1">
                               <CardTitle>{therapist.name}</CardTitle>
                               <CardDescription>{therapist.specialty}</CardDescription>
-                              <div className="flex items-center text-sm">
-                                <Star className="mr-1 h-4 w-4 fill-primary text-primary" />
-                                <span>{therapist.rating}</span>
-                                <span className="text-muted-foreground ml-1">({therapist.reviews} reviews)</span>
-                              </div>
                             </div>
                           </div>
                         </CardHeader>
-                        <CardContent className="flex-grow">
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Status:</span>
-                              <span>{therapist.experience}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Availability:</span>
-                              <span>{therapist.availability}</span>
-                            </div>
-                            {therapist.member_since && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Member since:</span>
-                                <span>{therapist.member_since}</span>
-                              </div>
-                            )}
-                            <div className="mt-2">
-                              <Badge
-                                variant="outline"
-                                className="bg-green-50 text-green-700 hover:bg-green-50 hover:text-green-700"
-                              >
-                                {therapist.status}
-                              </Badge>
-                            </div>
+                        <CardContent>
+                          <div className="text-2xl font-bold">{therapist.specialty}</div>
+                          <div className="flex items-center space-x-2 mt-2">
+                            <span className="text-muted-foreground">Availability:</span>
+                            <span>{therapist.availability}</span>
                           </div>
                         </CardContent>
                         <CardFooter className="flex gap-2 border-t p-4">
@@ -573,51 +525,44 @@ export default function TherapistsPage() {
 
         {/* Therapist Profile Dialog */}
         {selectedTherapist && (
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
                 <DialogTitle>Therapist Profile</DialogTitle>
-                </DialogHeader>
-                <div className="flex items-start gap-4 py-4">
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage src={selectedTherapist.image} alt={selectedTherapist.name} />
-                    <AvatarFallback>
-                      {selectedTherapist.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
+              </DialogHeader>
+              <div className="flex items-start gap-4 py-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={selectedTherapist.image} alt={selectedTherapist.name} />
+                  <AvatarFallback>
+                    {selectedTherapist.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="flex-1 space-y-1">
                   <h3 className="text-lg font-semibold">{selectedTherapist.name}</h3>
                   <p className="text-sm text-muted-foreground">{selectedTherapist.specialty}</p>
                   <div className="flex items-center text-sm">
-                      <Star className="mr-1 h-4 w-4 fill-primary text-primary" />
-                    <span>{selectedTherapist.rating}</span>
-                      <span className="text-muted-foreground ml-1">({selectedTherapist.reviews} reviews)</span>
-                    </div>
-                </div>
-                      </div>
-              <div className="grid gap-4">
-                <div className="space-y-2">
-                  <h4 className="font-medium">About</h4>
-                  <p className="text-sm text-muted-foreground">{selectedTherapist.bio}</p>
-                      </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                      <div>
                     <span className="text-muted-foreground">Status:</span>
                     <span className="ml-2">{selectedTherapist.experience}</span>
-                      </div>
-                      <div>
+                  </div>
+                  <div className="flex items-center text-sm">
                     <span className="text-muted-foreground">Availability:</span>
                     <span className="ml-2">{selectedTherapist.availability}</span>
-                      </div>
+                  </div>
                   {selectedTherapist.member_since && (
-                    <div className="col-span-2">
+                    <div className="flex items-center text-sm">
                       <span className="text-muted-foreground">Member since:</span>
                       <span className="ml-2">{selectedTherapist.member_since}</span>
                     </div>
                   )}
+                </div>
+              </div>
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium">About</h4>
+                  <p className="text-sm text-muted-foreground line-clamp-3">{selectedTherapist.bio}</p>
                 </div>
               </div>
               <DialogFooter className="flex-col sm:flex-row gap-2">
@@ -625,21 +570,16 @@ export default function TherapistsPage() {
                   variant="outline"
                   className="flex items-center gap-2 sm:flex-1"
                   onClick={() => {
-                    console.log("Message button clicked in dialog, navigating to messages with therapist:", {
-                      therapist: selectedTherapist.name,
-                      id: selectedTherapist.id
-                    });
-                    setIsDialogOpen(false);
-                    router.push(`/messages?therapistId=${selectedTherapist.id}`);
+                    router.push(`/messages?therapistId=${selectedTherapist.id}`)
                   }}
                 >
-                    <MessageSquare className="h-4 w-4" />
-                  <span>Message</span>
-                  </Button>
-                  <Button
+                  <MessageSquare className="h-4 w-4" />
+                  Message
+                </Button>
+                <Button
                   className="flex items-center gap-2 sm:flex-1"
-                    onClick={() => {
-                      setIsDialogOpen(false)
+                  onClick={() => {
+                    setIsDialogOpen(false)
                     handleConnect(selectedTherapist)
                   }}
                 >
@@ -649,8 +589,8 @@ export default function TherapistsPage() {
                       ? "Schedule Session" 
                       : "Request Connection"}
                   </span>
-                  </Button>
-                </DialogFooter>
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         )}
@@ -704,4 +644,3 @@ export default function TherapistsPage() {
     </DashboardLayout>
   )
 }
-

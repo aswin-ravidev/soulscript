@@ -35,8 +35,6 @@ export async function GET() {
       name: therapist.name,
       specialty: therapist.specialization || 'General Therapy',
       experience: 'Available',
-      rating: 4.8,
-      reviews: Math.floor(Math.random() * 50) + 5, // Random number of reviews for demo
       availability: 'Mon, Wed, Fri',
       status: 'Available',
       bio: therapist.bio || `${therapist.name} is a registered therapist on SoulScript.`,
@@ -53,4 +51,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-} 
+}
