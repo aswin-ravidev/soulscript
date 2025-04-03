@@ -36,8 +36,8 @@ export default function InsightsPage() {
           if (data.user && data.user.role === 'therapist') {
             setIsTherapist(true)
           } else {
-            // Not a therapist, redirect to user insights
-            router.push('/user-insights')
+            // Regular user, stay on insights page
+            setIsTherapist(false)
           }
         } else {
           // Error fetching user data, redirect to login
@@ -55,15 +55,15 @@ export default function InsightsPage() {
   }, [router])
 
   // Show nothing while checking user role
-  if (isLoading || !isTherapist) {
+  if (isLoading) {
     return null
   }
 
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Therapist Insights</h1>
-        <p className="text-muted-foreground">Monitor your patients' emotional patterns and growth</p>
+        <h1 className="text-3xl font-bold tracking-tight">Insights</h1>
+        <p className="text-muted-foreground">Monitor your emotional patterns and growth</p>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">

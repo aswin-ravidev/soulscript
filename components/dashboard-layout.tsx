@@ -21,7 +21,7 @@ interface DashboardLayoutProps {
 const userNavItems = [
   { title: 'Dashboard', href: '/dashboard', icon: Brain },
   { title: 'Journal', href: '/journal', icon: BookOpen },
-  { title: 'Insights', href: '/insights', icon: BarChart3 },
+  { title: 'Insights', href: '/user-insights', icon: BarChart3 },
   { title: 'Therapists', href: '/therapists', icon: User },
   { title: 'Messages', href: '/messages', icon: MessageSquare },
   { title: 'Appointments', href: '/appointments', icon: Calendar },
