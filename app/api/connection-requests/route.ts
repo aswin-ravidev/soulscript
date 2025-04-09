@@ -112,13 +112,26 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
     
     if (therapistId) {
-      // Get all connection requests for this therapist
+      // Get all connection requests for this therapist, including deleted users
       const requests = await ConnectionRequest.find({ therapist: therapistId })
         .populate('user', 'name email profileImage')
-        .sort({ createdAt: -1 })
-        .lean();
+        .sort({ createdAt: -1 });
       
-      return NextResponse.json(requests);
+      // Filter out requests where user no longer exists
+      const validRequests = requests.filter(request => {
+        // If user doesn't exist, mark it as deleted
+        if (!request.user) {
+          request.user = {
+            _id: request.user._id,
+            name: '[Deleted User]',
+            email: '[deleted]@soulscript.com',
+            profileImage: '/placeholder-user.jpg'
+          };
+        }
+        return true;
+      });
+      
+      return NextResponse.json(validRequests);
     } 
     else if (userId) {
       // Get all connection requests by this user
